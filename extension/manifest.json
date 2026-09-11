@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "Preclass \u2014 Forum to ChatGPT",
+  "version": "0.1.0",
+  "description": "Collect, review, and bring your preclass readings to ChatGPT. No API key.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "clipboardWrite"
+  ],
+  "host_permissions": [
+    "https://chatgpt.com/*",
+    "https://forum.minerva.edu/*",
+    "https://forum.minerva.kgi.edu/*"
+  ],
+  "action": {
+    "default_title": "Collect Preclass",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://forum.minerva.edu/*",
+        "https://forum.minerva.kgi.edu/*"
+      ],
+      "js": [
+        "launcher.js"
+      ]
+    },
+    {
+      "matches": [
+        "https://chatgpt.com/*"
+      ],
+      "js": [
+        "handoff.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
