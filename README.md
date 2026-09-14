@@ -1,30 +1,30 @@
 # ✦ Preclass
 
-A local Chrome / Edge Manifest V3 extension that takes a Forum assignment to an editable ChatGPT draft. No backend, API key, inference, analytics, or API billing.
+A local Chrome / Edge Manifest V3 extension that takes a Forum pre-class work to an automatically submitted ChatGPT prompt. No backend, API key, inference, analytics, or API billing.
 
 ## Install
 
 1. Open `chrome://extensions` (or `edge://extensions`) and enable **Developer mode**.
 2. Choose **Load unpacked** and select this repository's **extension** folder.
 3. Pin **Preclass** in your browser toolbar.
-4. Open a Forum assignment and expand its instructions, readings, and questions.
-5. Click **✦ Preclass** on Forum, or the toolbar icon → **Collect this assignment**.
+4. Open a Forum pre-class work and expand its instructions, readings, and questions.
+5. Click **✦ Preclass** on Forum, or the toolbar icon → **Collect pre-class work**.
 6. Review collected text and questions, deselect unrelated links, and edit the course/session if needed.
 7. Paste the URL of your existing ChatGPT course chat or project and choose **Save course destination**.
-8. Choose **Open in ChatGPT**. Review the inserted draft and click **Send** yourself.
+8. Choose **Open in ChatGPT**. The extension inserts your reviewed prompt and clicks **Send** automatically.
 
-Use an existing course **chat URL** for the most direct handoff. A project landing page may require opening a chat first; the handoff card keeps **Copy prompt** available. You must already be logged in, or log in on the opened tab. No automatic message submission occurs.
+Use an existing course **chat URL** for the most direct handoff. A project landing page may require opening a chat first; the handoff card keeps **Copy prompt** available. You must already be logged in, or log in on the opened tab. If automatic insertion or sending is unavailable, the handoff card offers a copy fallback. Existing drafts are never overwritten or sent.
 
 To focus collection on part of a long page, select at least 31 characters before collecting. The extension also offers **Try a sample** without requiring Forum access.
 
 ## What is collected
 
 - Visible text in the page's `main`, main role, or `article` area (body fallback).
-- HTTP(S) links in that area, deduplicated by full URL, with nearby paragraph/list context.
+- HTTP(S) links only under a **Readings** title, deduplicated by full URL, with nearby paragraph/list context. Collection stops at the next heading of equal or higher rank or the enclosing section boundary. Lower-level reading titles stay included. A missing or empty Readings section produces no links; there is no whole-page fallback.
 - PDF labels inferred from URL or link text; file contents are not fetched.
 - Candidate questions ending in `?`, plus numbered prompts such as “Explain” or “Prove”.
 
-Extraction is heuristic, not a verified adapter for Minerva's current private DOM. Review is essential. Navigation links inside assignment content can appear. Unexpanded content, cross-origin frames, image-only readings, and non-link file widgets are not extracted. Text is capped at 60,000 characters with a visible truncation notice. Use smaller selections if needed.
+Extraction is heuristic, not a verified adapter for Minerva's current private DOM. Review is essential. Links outside the Readings section are excluded. Semantic headings and standalone bold paragraph/div titles are supported. Unexpanded content, cross-origin frames, image-only readings, and non-link file widgets are not extracted. Text is capped at 60,000 characters with a visible truncation notice. Use smaller selections if needed.
 
 Private or authenticated readings may be inaccessible to ChatGPT. Download them from Forum and upload them yourself. The generated prompt asks ChatGPT to disclose inaccessible sources and never pretend to have read them. “Course context” asks ChatGPT to use context already available there; the extension does not collect previous chats.
 
@@ -36,7 +36,7 @@ Private or authenticated readings may be inaccessible to ChatGPT. Download them 
 - `storage`: course URLs in local browser storage, pending prompts in session storage.
 - `clipboardWrite`: user-triggered copy fallback.
 
-No remote code, OpenAI API, scraping of reading contents, cookies API, or telemetry. Prompt handoffs expire after 15 minutes when next accessed and are removed after successful insertion, dismissal, tab closure, or browser session end. Saved destinations remain until removed via browser extension data. Only HTTPS `chatgpt.com` destinations are accepted. Existing composer drafts are preserved.
+No remote code, OpenAI API, scraping of reading contents, cookies API, or telemetry. Prompt handoffs expire after 15 minutes when next accessed and are removed before automatic submission, dismissal, tab closure, or browser session end. Saved destinations remain until removed via browser extension data. Only HTTPS `chatgpt.com` destinations are accepted. Existing composer drafts are preserved.
 
 ## Development
 
@@ -49,8 +49,12 @@ npx playwright install chromium
 npm run test:browser
 ```
 
-The browser suite loads the actual extension in isolated Chromium and intercepts Forum/ChatGPT URLs with local HTML fixtures. It checks extraction, selected text, source exclusion, destination persistence, background messaging, insertion, and draft preservation. It does not log into or send messages to either service. `preview.png` is generated by this test.
+The browser suite loads the actual extension in isolated Chromium and intercepts Forum/ChatGPT URLs with local HTML fixtures. It checks extraction, selected text, source exclusion, destination persistence, background messaging, automatic submission, and draft preservation. It does not log into or send messages to either service. `preview.png` is generated by this test.
 
 `extension/core.js` contains the serializable collector and pure prompt formatter. `background.js` owns tab-specific handoffs. `handoff.js` is the deliberately small ChatGPT DOM adapter. If ChatGPT changes its composer, update that adapter; the copy fallback remains available. This UI integration is not an official ChatGPT API.
 
 Project context reference: [official OpenAI project documentation](https://learn.chatgpt.com/es-419/docs/projects).
+
+## Copy the finished guide
+
+After sending, keep the ChatGPT tab open. Preclass watches the reply to that prompt and copies its rendered plain text once a completed-response Copy action appears and streaming has stopped. Paste it into Google Docs. The handoff card also offers **Copy study guide** if the browser blocks automatic clipboard access. It never copies an older reply or a partial streaming response. The banner shows a working circle during generation, then a 15-second countdown before it disappears. Hovering or focusing it pauses the countdown. Reloading the page or continuing with another message ends the watch; monitoring expires after 20 minutes. ChatGPT DOM changes can prevent completion detection; use ChatGPT’s own Copy action in that case. The prompt requests only the study guide, without acknowledgments or repetitive recaps.
