@@ -10,3 +10,10 @@ test('allows only HTTPS ChatGPT destinations',()=>{
 test('preserves assignments, source attribution and questions',()=>{const p=promptFor(data,{context:true});for(const text of ['Chapter 3','[PDF]','Why does induction work?','https://example.com/a.pdf','Do not invent prior context','Never imply you read'])assert.ok(p.includes(text));});
 test('respects prompt switches',()=>{const p=promptFor(data,{instructions:false,notes:false,context:false});assert.ok(!p.includes('Read chapter 3'));assert.ok(!p.includes('Organize notes'));assert.ok(!p.includes('Connect to previous'));assert.ok(p.includes('Why does induction work?'));});
 test('does not invent missing resources',()=>{const p=promptFor({...data,links:[],questions:[]});assert.ok(p.includes('No reading links detected'));assert.ok(p.includes('None detected'));});
+
+test('keeps unlinked titles with explicit missing-source instructions',()=>{
+ const p=promptFor({...data,links:[{title:'Smith (2024). Learning science',url:''}]});
+ assert.ok(p.includes('Smith (2024). Learning science'));
+ assert.ok(p.includes('Sources not found'));
+ assert.ok(!p.includes('undefined'));
+});

@@ -18,46 +18,44 @@
     textarea{width:100%;height:150px;margin-top:14px;padding:10px;background:#fffdf8;color:#253d31;border:1px solid #cbd2c4;border-radius:7px;font:13px/1.5 system-ui}
     .timer{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(#748151 var(--progress,100%),#e1e3d9 0);flex-shrink:0}
     .timer span{width:26px;height:26px;border-radius:50%;background:#f7f5ee;display:grid;place-items:center;font-size:10px;font-variant-numeric:tabular-nums;color:#69735a}
-    .timer.busy{background:conic-gradient(#748151 25%,#e1e3d9 0);animation:spin 1.2s linear infinite}
-    .timer.busy span{font-size:0}
-    @keyframes spin{to{transform:rotate(360deg)}}
-    @media(prefers-reduced-motion:reduce){.timer.busy{animation:none}}
+
   `;
   const box=document.createElement('section');
   const header=document.createElement('header');
   const brand=document.createElement('div');brand.className='brand';brand.textContent='✦ PRECLASS';
-  const circle=document.createElement('div');circle.className='timer';circle.setAttribute('role','timer');
+  const circle=document.createElement('div');circle.className='timer';circle.style.setProperty('--progress','0%');circle.setAttribute('role','timer');
   const seconds=document.createElement('span');circle.append(seconds);
   header.append(brand,circle);
   const status=document.createElement('p');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
   let copyText=item.prompt, guideReady=false, cancelled=false, working=true;
   let stopWatching=()=>{};
-  let remaining=15000, lastTick=Date.now();
+  let shownAt=Date.now();
+  const resultName=item.mode==='workbook' ? 'Workbook answers' : 'Study guide';
   const setStatus=(text,busy=false)=>{
     status.textContent=text.replace(/^✦ (?:Preclass · )?/, '');
-    working=busy;remaining=15000;lastTick=Date.now();
-    circle.classList.toggle('busy',busy);
-    circle.title=busy ? 'Working. The 15-second countdown starts when ready.' : 'Closes automatically. Hover or focus the banner to pause.';
-    circle.setAttribute('aria-label',busy ? 'Working' : 'Closes in 15 seconds');
-    seconds.textContent=busy ? '' : '15';circle.style.setProperty('--progress','100%');
+    working=busy;
+    // In-flight status changes never restart the initial five-second timer.
+    // A finished result gets its own brief notification without stopping the watcher.
+    if(!busy){shownAt=Date.now();circle.style.setProperty('--progress','0%');if(!host.isConnected)document.body.append(host);}
+    circle.title='Closes automatically after five seconds';
   };
   const copy=document.createElement('button');copy.textContent='Copy prompt';
   const fallback=document.createElement('textarea');fallback.value=item.prompt;fallback.hidden=true;fallback.setAttribute('aria-label','Preclass prompt');
   copy.onclick=async()=>{
-    try{await navigator.clipboard.writeText(copyText);setStatus(guideReady ? 'Study guide copied. Paste into your Google Doc.' : 'Copied. Paste into your chat and click Send.',working);}
+    try{await navigator.clipboard.writeText(copyText);setStatus(guideReady ? resultName+' copied. Paste into your Google Doc.' : 'Copied. Paste into your chat and click Send.',working);}
     catch{fallback.value=copyText;fallback.hidden=false;fallback.focus();fallback.select();setStatus('Select the text below and copy it manually.',working);}
   };
   box.append(header,status,copy,fallback);shadow.append(style,box);document.body.append(host);
   setStatus('Looking for the composer…',true);
   const timer=setInterval(()=>{
-    const now=Date.now(),elapsed=now-lastTick;lastTick=now;
-    if(working || box.matches(':hover') || shadow.activeElement)return;
-    remaining=Math.max(0,remaining-elapsed);
-    seconds.textContent=String(Math.ceil(remaining/1000));
-    circle.style.setProperty('--progress',`${remaining/15000*100}%`);
-    circle.setAttribute('aria-label',`Closes in ${Math.ceil(remaining/1000)} seconds`);
-    if(!remaining){clearInterval(timer);cancelled=true;stopWatching();chrome.runtime.sendMessage({type:'done'});host.remove();}
-  },100);
+    const elapsed=Math.min(5000,Date.now()-shownAt);
+    seconds.textContent=String(Math.floor(elapsed/1000));
+    circle.style.setProperty('--progress',`${elapsed/5000*100}%`);
+    circle.setAttribute('aria-label',`${Math.floor(elapsed/1000)} of 5 seconds`);
+    if(elapsed>=5000 && host.isConnected)host.remove();
+  },50);
+  // The notification lifecycle is independent of sending and copying.
+  window.addEventListener('pagehide',()=>{clearInterval(timer);stopWatching();},{once:true});
   // Browsers represent blank lines differently in rich-text editors.
   const normalized=text=>text.replace(/\s+/g,' ').trim();
   const findComposer=()=>[...document.querySelectorAll('#prompt-textarea[contenteditable="true"], textarea#prompt-textarea, textarea[data-testid="prompt-textarea"]')].find(el=>el.getClientRects().length);
@@ -116,13 +114,14 @@
         onStatus:text=>{if(!cancelled)setStatus(text);},
         onReady:async text=>{
           if(cancelled)return;
-          guideReady=true;copyText=text;copy.textContent='Copy study guide';
+          if(item.mode!=='workbook')await chrome.runtime.sendMessage({type:'guide-state',phase:'ready'});
+          guideReady=true;copyText=text;copy.textContent='Copy '+resultName.toLowerCase();
           fallback.value=text;fallback.setAttribute('aria-label','Study guide');
           try {
             await navigator.clipboard.writeText(text);
-            if(!cancelled)setStatus('✦ Study guide copied. Paste into your Google Doc.');
+            if(!cancelled)setStatus(resultName+' copied. Paste into your Google Doc.');
           } catch {
-            if(!cancelled)setStatus('Your study guide is ready. Click Copy study guide to copy it.');
+            if(!cancelled)setStatus(resultName+' ready. Click Copy to copy it.');
           }
         }
       });
@@ -138,7 +137,8 @@
         const current=findComposer();
         const generating=document.querySelector('[data-testid="stop-button"], button[aria-label="Stop generating"], button[aria-label="Stop answering"]');
         if(received || (generating && current && !normalized(current.value ?? current.innerText))){
-          setStatus('Waiting for the finished study guide to copy. Keep this tab open.',true);
+          if(item.mode!=='workbook')await chrome.runtime.sendMessage({type:'guide-state',phase:'submitted'});
+          setStatus('Waiting for the finished response to copy. Keep this tab open.',true);
           return;
         }
         await new Promise(r=>setTimeout(r,250));

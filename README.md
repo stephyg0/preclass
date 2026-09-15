@@ -8,7 +8,7 @@ A local Chrome / Edge Manifest V3 extension that takes a Forum pre-class work to
 2. Choose **Load unpacked** and select this repository's **extension** folder.
 3. Pin **Preclass** in your browser toolbar.
 4. Open a Forum pre-class work and expand its instructions, readings, and questions.
-5. Click **✦ Preclass** on Forum, or the toolbar icon → **Collect pre-class work**.
+5. Click the Preclass toolbar icon → **Collect pre-class work**.
 6. Review collected text and questions, deselect unrelated links, and edit the course/session if needed.
 7. Paste the URL of your existing ChatGPT course chat or project and choose **Save course destination**.
 8. Choose **Open in ChatGPT**. The extension inserts your reviewed prompt and clicks **Send** automatically.
@@ -31,7 +31,7 @@ Private or authenticated readings may be inaccessible to ChatGPT. Download them 
 ## Privacy and permissions
 
 - `activeTab` and `scripting`: collect the tab you invoke the extension on.
-- Forum host access: floating launcher and collection from its separate review tab on `forum.minerva.edu` and `forum.minerva.kgi.edu`.
+- Forum host access: collection from the extension review tab on `forum.minerva.edu` and `forum.minerva.kgi.edu`.
 - ChatGPT host access: insert a draft only in a newly opened, explicitly targeted tab.
 - `storage`: course URLs in local browser storage, pending prompts in session storage.
 - `clipboardWrite`: user-triggered copy fallback.
@@ -57,4 +57,20 @@ Project context reference: [official OpenAI project documentation](https://learn
 
 ## Copy the finished guide
 
-After sending, keep the ChatGPT tab open. Preclass watches the reply to that prompt and copies its rendered plain text once a completed-response Copy action appears and streaming has stopped. Paste it into Google Docs. The handoff card also offers **Copy study guide** if the browser blocks automatic clipboard access. It never copies an older reply or a partial streaming response. The banner shows a working circle during generation, then a 15-second countdown before it disappears. Hovering or focusing it pauses the countdown. Reloading the page or continuing with another message ends the watch; monitoring expires after 20 minutes. ChatGPT DOM changes can prevent completion detection; use ChatGPT’s own Copy action in that case. The prompt requests only the study guide, without acknowledgments or repetitive recaps.
+After sending, keep the ChatGPT tab open. Preclass watches the reply to that prompt and copies its rendered plain text once a completed-response Copy action appears and streaming has stopped. Paste it into Google Docs. The handoff card also offers **Copy study guide** if the browser blocks automatic clipboard access. It never copies an older reply or a partial streaming response. Every banner fills a circle from 0 to 5 seconds and disappears at five seconds. Sending and response copying continue independently; the completed response gets a fresh five-second notification. Reloading the page or continuing with another message ends the watch; monitoring expires after 20 minutes. ChatGPT DOM changes can prevent completion detection; use ChatGPT’s own Copy action in that case. The prompt requests only the study guide, without acknowledgments or repetitive recaps.
+
+## Readings without links
+
+Preclass also collects unlinked reading headings, bold titles, and citation-style text under Readings. Choose **Find missing links on Google** and grant optional access to `www.google.com` when Chrome asks. Once access is granted, future collections automatically search unlinked titles. Only the reading titles are sent as Google searches. The extension suggests up to three title matches for each reading; confirm the author and edition before selecting **Use**. Search matches are candidates, not proof of full-text access. No match, blocked Google requests, or network errors are shown next to the reading, with a manual Google search link. Unresolved readings remain in the prompt with instructions to search by title and author and explicitly list unavailable sources rather than fabricate notes.
+
+## Workbook questions tab
+
+Choose **Workbook questions** to collect a pre-class workbook instead of readings. The collector uses the workbook’s **Question N of M** markers to preserve all numbered prompts, instructions, and subparts. It excludes answer editors and formatting toolbars, does not write answers into Forum, and does not run code cells. The preview shows the collected count and disables sending when any numbered question is missing. Open the full workbook and load all questions if only one page is exposed.
+
+For an embedded workbook on a different HTTPS origin, choose **Enable workbook access**. Chrome requests access only to the origins of the discovered workbook frames/links, using the extension’s optional host permission. Alternatively, open the workbook in its own tab and invoke Preclass there. Collection supports HTML workbooks with the numbering shown in the screenshot; PDF, image-only, and unnumbered workbooks need manual extraction.
+
+**Copy questions** copies the collected question text. **Open in ChatGPT** also copies those questions, sends the workbook prompt, and watches for the completed answers to copy. The study-guide and workbook tabs preserve their own previews while switching within the open panel.
+
+### Workbook context in the study-guide chat
+
+Preclass records the actual conversation URL after the study-guide message is submitted, including when a project landing page creates a new chat. Workbook mode uses that recorded conversation for the same course and pre-class page and asks ChatGPT to use the existing study guide and readings. It opens that same conversation in a new browser tab so existing drafts in other tabs are preserved. Wait until the study guide finishes before sending workbook questions. The conversation association is stored locally across extension popup/browser restarts. If no guide is recorded (for example, a guide created before this update or a workbook opened from a different page), paste the existing guide’s conversation URL. A project landing page cannot be used for that workbook fallback.

@@ -29,15 +29,6 @@
   "content_scripts": [
     {
       "matches": [
-        "https://forum.minerva.edu/*",
-        "https://forum.minerva.kgi.edu/*"
-      ],
-      "js": [
-        "launcher.js"
-      ]
-    },
-    {
-      "matches": [
         "https://chatgpt.com/*"
       ],
       "js": [
@@ -52,5 +43,8 @@
     "32": "icons/icon-32.png",
     "48": "icons/icon-48.png",
     "128": "icons/icon-128.png"
-  }
+  },
+  "optional_host_permissions": [
+    "https://*/*"
+  ]
 }
