@@ -182,7 +182,7 @@ try {
  assert.equal(await panel.locator('#open').isEnabled(),false);
  assert.equal(await panel.getByRole('link',{name:'Open full workbook'}).getAttribute('href'),'https://workbook.example/session');
  console.log('PASS cross-origin workbook access prompt and open-in-new-tab fallback');
- // A study guide started from a project must route the workbook to its actual conversation.
+ // A stale saved completion state must neither override the entered URL nor block sending.
  await context.unroute('https://chatgpt.com/**');
  await context.route('https://chatgpt.com/**',route=>{
    const isProject=new URL(route.request().url()).pathname.endsWith('/project');
@@ -201,13 +201,19 @@ try {
  const recorded=await worker.evaluate(()=>chrome.storage.local.get(null));
  assert.ok(Object.entries(recorded).some(([key,value])=>key.startsWith('study:') && value.ready && value.url==='https://chatgpt.com/g/g-p-course/c/study-context'),JSON.stringify(recorded));
  await popup.locator('#tab-workbook').click();await popup.locator('#demo').click();
- await popup.waitForFunction(()=>document.querySelector('#destination').value.endsWith('/c/study-context'));
+ await popup.locator('#destination').fill('https://chatgpt.com/g/g-p-course/c/chosen-context');
+ await worker.evaluate(async()=>{
+   const saved=await chrome.storage.local.get(null);
+   for(const [key,value] of Object.entries(saved))if(key.startsWith('study:'))await chrome.storage.local.set({[key]:{...value,ready:false}});
+ });
+ assert.equal(await popup.locator('#destination').inputValue(),'https://chatgpt.com/g/g-p-course/c/chosen-context');
+ assert.ok(!(await popup.locator('#context-status').innerText()).includes('still being prepared'));
  assert.match(await popup.locator('#prompt').inputValue(),/Use that study guide, the assigned readings/);
  const followupOpened=context.waitForEvent('page');await popup.locator('#open').click();const followup=await followupOpened;
- await followup.waitForURL('https://chatgpt.com/g/g-p-course/c/study-context');
+ await followup.waitForURL('https://chatgpt.com/g/g-p-course/c/chosen-context');
  await followup.waitForFunction(()=>window.sent===true);
  assert.match(await followup.locator('[data-message-author-role="assistant"]').innerText(),/Existing study guide and reading context/);
  assert.match(await followup.locator('[data-message-author-role="user"]').innerText(),/ALL 2 WORKBOOK QUESTIONS/);
- console.log('PASS project-to-conversation capture and workbook follow-up in the same study-guide chat');
+ console.log('PASS workbook sends to the entered chat despite stale saved completion status');
  assert.deepEqual(errors,[]);
 } finally {await context.close();await rm(directory,{recursive:true,force:true});}

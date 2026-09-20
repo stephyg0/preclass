@@ -7,16 +7,12 @@ const cache={};
 let workbookOrigins=[];
 const api=globalThis.chrome?.runtime?.id;
 const status=text=>{$('status').textContent=text;$('status').hidden=!text;};
-async function showStudyContext(){
-  if(!api || mode!=='workbook' || !data)return;
-  const current=data;
-  const result=await chrome.runtime.sendMessage({type:'get-study-context',course:data.course,sourceURL:sourceURL || data.url});
-  if(mode!=='workbook' || data!==current)return;
-  const context=result.context;
+function showStudyContext(){
+  if(mode!=='workbook')return;
   $('context-status').hidden=false;
-  $('context-status').textContent=context ? (context.ready ? 'Workbook questions will continue in the saved study-guide conversation.' : 'The study guide is still being prepared. Send the questions once it is ready.') : 'Create the study guide first, or paste the URL of the chat containing it.';
-  if(context?.url)$('destination').value=context.url;
+  $('context-status').textContent='Sends directly to the ChatGPT link you enter. Use your study-guide chat to keep its readings and context.';
 }
+
 function refresh(){
   if(!data)return;
   data.course=$('course').value;data.title=$('title').value;data.text=$('source').value;
@@ -152,4 +148,4 @@ $('search-missing').onclick=async()=>{
   }finally{$('search-missing').disabled=false;}
 };
 
-if(api){({courses={}}=await chrome.storage.local.get('courses'));listCourses();chrome.storage.onChanged.addListener((changes,area)=>{if(area==='local' && Object.keys(changes).some(key=>key.startsWith('study:')))showStudyContext();});if(sourceTabId)collect();}
+if(api){({courses={}}=await chrome.storage.local.get('courses'));listCourses();if(sourceTabId)collect();}

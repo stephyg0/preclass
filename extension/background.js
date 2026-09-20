@@ -30,8 +30,7 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
       if (typeof message.prompt !== 'string' || !message.prompt.trim() || message.prompt.length > 200000) throw new Error('Prompt must contain 1–200,000 characters.');
       const mode=message.mode==='workbook'?'workbook':'study';
       const key=studyContextKey(message.course,message.sourceURL);
-      const context=(await chrome.storage.local.get('study:'+key))['study:'+key];
-      const url=mode==='workbook' ? workbookDestination(context,message.url) : destination(message.url);
+      const url=mode==='workbook' ? workbookDestination(message.url) : destination(message.url);
       const tab = await chrome.tabs.create({url:'about:blank'});
       await chrome.storage.session.set({['pending:'+tab.id]:{prompt:message.prompt,mode,created:Date.now()}});
       if(mode==='study'){

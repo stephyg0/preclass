@@ -9,10 +9,6 @@ export function studyContextKey(course,sourceURL) {
   try{const url=new URL(sourceURL);source=url.origin+url.pathname;}catch{}
   return JSON.stringify([String(course || '').trim().toUpperCase(),source]);
 }
-export function workbookDestination(context,manualURL) {
-  if(context){
-    if(!context.ready || !context.url)throw Error('The study guide is still being prepared. Wait until it finishes, then send the workbook questions.');
-    return conversationURL(context.url);
-  }
-  return conversationURL(manualURL);
+export function workbookDestination(manualURL) {
+  return destination(manualURL);
 }
